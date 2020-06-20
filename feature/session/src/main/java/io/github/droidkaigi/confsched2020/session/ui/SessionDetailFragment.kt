@@ -3,15 +3,18 @@ package io.github.droidkaigi.confsched2020.session.ui
 import android.os.Bundle
 import android.view.View
 import androidx.annotation.IdRes
+import androidx.core.view.doOnNextLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.observe
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.google.android.material.transition.Hold
 import com.xwray.groupie.Group
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.databinding.GroupieViewHolder
@@ -25,6 +28,7 @@ import io.github.droidkaigi.confsched2020.ext.isShow
 import io.github.droidkaigi.confsched2020.model.Session
 import io.github.droidkaigi.confsched2020.model.Speaker
 import io.github.droidkaigi.confsched2020.model.SpeechSession
+import io.github.droidkaigi.confsched2020.model.ThumbsUpCount
 import io.github.droidkaigi.confsched2020.model.defaultLang
 import io.github.droidkaigi.confsched2020.session.R
 import io.github.droidkaigi.confsched2020.session.databinding.FragmentSessionDetailBinding
@@ -87,6 +91,7 @@ class SessionDetailFragment : Fragment(R.layout.fragment_session_detail), Inject
         sharedElementEnterTransition = fadeThrough().apply {
             duration = MEDIUM_EXPAND_DURATION
         }
+        exitTransition = Hold()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -114,7 +119,6 @@ class SessionDetailFragment : Fragment(R.layout.fragment_session_detail), Inject
 
         sessionDetailViewModel.uiModel
             .observe(viewLifecycleOwner) { uiModel: SessionDetailViewModel.UiModel ->
-                uiModel.error?.let { systemViewModel.onError(it) }
                 binding.progressBar.isShow = uiModel.isLoading
                 uiModel.session
                     ?.let { session ->
@@ -123,40 +127,51 @@ class SessionDetailFragment : Fragment(R.layout.fragment_session_detail), Inject
                             adapter,
                             session,
                             uiModel.showEllipsis,
-                            uiModel.searchQuery
+                            uiModel.searchQuery,
+                            uiModel.thumbsUpCount
                         )
                     }
+                uiModel.error?.let { systemViewModel.onError(it) }
             }
 
-        binding.bottomAppBar.setOnMenuItemClickListener { menuItem ->
-            val session = binding.session ?: return@setOnMenuItemClickListener true
-            when (menuItem.itemId) {
-                R.id.session_share -> {
-                    val sessionId = session.id.id
-                    val url = resources.getString(R.string.session_share_url).format(sessionId)
-                    systemViewModel.shareURL(
-                        activity = requireActivity(),
-                        url = url
-                    )
-                }
-                R.id.floormap -> {
-                    val directions = actionSessionToFloormap(session.room)
-                    findNavController().navigate(directions)
-                }
-                R.id.session_calendar -> {
-                    systemViewModel.sendEventToCalendar(
-                        activity = requireActivity(),
-                        title = session.title.getByLang(defaultLang()),
-                        location = session.room.name.getByLang(defaultLang()),
-                        startDateTime = session.startTime,
-                        endDateTime = session.endTime
-                    )
-                }
-                else -> {
-                    handleNavigation(menuItem.itemId)
-                }
+        binding.bottomAppBar.run {
+            doOnNextLayout {
+                measure(
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
             }
-            return@setOnMenuItemClickListener true
+            setOnMenuItemClickListener { menuItem ->
+                val session = binding.session ?: return@setOnMenuItemClickListener true
+
+                when (menuItem.itemId) {
+                    R.id.session_share -> {
+                        val sessionId = session.id.id
+                        val url = resources.getString(R.string.session_share_url).format(sessionId)
+                        systemViewModel.shareURL(
+                            activity = requireActivity(),
+                            url = url
+                        )
+                    }
+                    R.id.floormap -> {
+                        val directions = actionSessionToFloormap(session.room)
+                        findNavController().navigate(directions)
+                    }
+                    R.id.session_calendar -> {
+                        systemViewModel.sendEventToCalendar(
+                            activity = requireActivity(),
+                            title = session.title.getByLang(defaultLang()),
+                            location = session.room.name.getByLang(defaultLang()),
+                            startDateTime = session.startTime,
+                            endDateTime = session.endTime
+                        )
+                    }
+                    else -> {
+                        handleNavigation(menuItem.itemId)
+                    }
+                }
+                return@setOnMenuItemClickListener true
+            }
         }
     }
 
@@ -183,13 +198,21 @@ class SessionDetailFragment : Fragment(R.layout.fragment_session_detail), Inject
         adapter: GroupAdapter<GroupieViewHolder<*>>,
         session: Session,
         showEllipsis: Boolean,
-        searchQuery: String?
+        searchQuery: String?,
+        thumbsUpCount: ThumbsUpCount
     ) {
         binding.sessionDetailRecycler.transitionName =
             "${session.id}-${navArgs.transitionNameSuffix}"
 
         val items = mutableListOf<Group>()
-        items += sessionDetailTitleItemFactory.create(session, searchQuery)
+        items += sessionDetailTitleItemFactory.create(
+            session,
+            searchQuery,
+            viewLifecycleOwner.lifecycleScope,
+            thumbsUpCount
+        ) {
+            sessionDetailViewModel.thumbsUp(session)
+        }
         items += sessionDetailDescriptionItemFactory.create(
             session,
             showEllipsis,

@@ -37,7 +37,7 @@ internal open class KtorDroidKaigiApi constructor(
     override suspend fun getSessions(): Response {
         // We are separate getting response string and parsing for Kotlin Native
         val rawResponse = httpClient.get<String> {
-            url("$apiEndpoint/timetable")
+            url("$apiEndpoint/timetable/")
             accept(ContentType.Application.Json)
         }
         return json.parse(ResponseImpl.serializer(), rawResponse)
@@ -84,7 +84,7 @@ internal open class KtorDroidKaigiApi constructor(
 
     override suspend fun getAnnouncements(lang: LangParameter): AnnouncementListResponse {
         val rawResponse = httpClient.get<String> {
-            url("$apiEndpoint/announcements/${lang.value}")
+            url("$apiEndpoint/announcements/${lang.value}/")
             accept(ContentType.Application.Json)
         }
 
@@ -93,7 +93,7 @@ internal open class KtorDroidKaigiApi constructor(
 
     override suspend fun getSponsors(): SponsorListResponse {
         val rawResponse = httpClient.get<String> {
-            url("$apiEndpoint/sponsors")
+            url("$apiEndpoint/sponsors/")
             accept(ContentType.Application.Json)
         }
 
@@ -116,16 +116,30 @@ internal open class KtorDroidKaigiApi constructor(
 
     override suspend fun getStaffs(): StaffResponse {
         val rawResponse = httpClient.get<String> {
-            url("$apiEndpoint/committee_members")
+            url("$apiEndpoint/committee_members/")
             accept(ContentType.Application.Json)
         }
 
         return StaffResponseImpl(json.parse(StaffItemResponseImpl.serializer().list, rawResponse))
     }
 
+    override fun getContributorList(
+        callback: (response: ContributorResponse) -> Unit,
+        onError: (error: Exception) -> Unit
+    ) {
+        GlobalScope.launch(requireNotNull(coroutineDispatcherForCallback)) {
+            try {
+                val response = getContributorList()
+                callback(response)
+            } catch (ex: Exception) {
+                onError(ex)
+            }
+        }
+    }
+
     override suspend fun getContributorList(): ContributorResponse {
         val rawResponse = httpClient.get<String> {
-            url("$apiEndpoint/contributors")
+            url("$apiEndpoint/contributors/")
             accept(ContentType.Application.Json)
         }
 

@@ -1,9 +1,19 @@
-import ios_combined
+import ioscombined
 import RealmSwift
 import RxRealm
 import RxSwift
 
 final class BookingSessionProvider {
+    init() {
+        let config = Realm.Configuration(
+            schemaVersion: 1,
+            migrationBlock: { _, oldSchemaVersion in
+                if oldSchemaVersion < 1 {}
+            }
+        )
+        Realm.Configuration.defaultConfiguration = config
+    }
+
     func bookSession(_ session: Session) {
         do {
             let realm = try Realm()
@@ -18,7 +28,7 @@ final class BookingSessionProvider {
     }
 
     // 1582160400 is 2/20 10:00
-    func fetchBookedSessions(firstSessionStartTime: TimeInterval = 1582160400) -> Observable<[Session]> {
+    func fetchBookedSessions(firstSessionStartTime: TimeInterval = 1_582_160_400) -> Observable<[Session]> {
         do {
             let realm = try Realm()
             let result = realm.objects(SessionEntity.self)

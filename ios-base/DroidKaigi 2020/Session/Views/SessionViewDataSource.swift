@@ -1,4 +1,4 @@
-import ios_combined
+import ioscombined
 import MaterialComponents
 import RxCocoa
 import RxSwift
@@ -38,7 +38,7 @@ final class SessionViewDataSource: NSObject, UICollectionViewDataSource {
 
         let session = items[indexPath.item]
 
-        cell.titleLabel.text = session.title.ja
+        cell.titleLabel.text = session.title.currentLangString
 
         var speakers: [Speaker] = []
         if let speechSession = session as? SpeechSession {
@@ -85,8 +85,15 @@ final class SessionViewDataSource: NSObject, UICollectionViewDataSource {
         } else {
             cell.liveBadge.isHidden = true
         }
-        
+
         cell.bookmarkButton.isSelected = session.isFavorited
+        cell.descriptionText = type == .event ? session.desc : ""
+
+        if let speechSession = session as? SpeechSession, let message = speechSession.message {
+            cell.sessionMessage = message.currentLangString
+        } else {
+            cell.sessionMessage = ""
+        }
 
         return cell
     }

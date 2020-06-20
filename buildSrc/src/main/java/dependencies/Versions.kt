@@ -5,7 +5,7 @@ object Versions {
     val androidCompileSdkVersion = 29
     val androidMinSdkVersion = 21
 
-    private val versionMajor = 0
+    private val versionMajor = 1
     private val versionMinor = 1
     private val versionPatch = 0
     private val versionOffset = 0

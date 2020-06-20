@@ -1,4 +1,4 @@
-import ios_combined
+import ioscombined
 
 final class RealmToModelMapper {
     static func toModel(sessionEntity session: SessionEntity, firstSessionSTime firstSTime: TimeInterval) -> Session? {
@@ -73,7 +73,10 @@ final class RealmToModelMapper {
                 isInterpretationTarget: session.isInterpretationTarget,
                 isFavorited: session.isFavorited,
                 speakers: session.speakers.map { toModel(speakerEntity: $0) },
-                message: nil
+                message: LocaledString(
+                    ja: session.message ?? "",
+                    en: session.enMessage ?? ""
+                )
             )
         }
     }

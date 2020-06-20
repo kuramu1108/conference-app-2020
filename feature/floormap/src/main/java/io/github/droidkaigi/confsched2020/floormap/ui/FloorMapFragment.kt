@@ -2,7 +2,6 @@ package io.github.droidkaigi.confsched2020.floormap.ui
 
 import android.os.Bundle
 import android.view.View
-import androidx.annotation.DrawableRes
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
@@ -29,7 +28,7 @@ class FloorMapFragment : Fragment(R.layout.fragment_floormap), Injectable {
 
         val mapPlaceholderDrawable = ResourcesCompat.getDrawable(
             resources,
-            R.drawable.ic_map_black,
+            R.drawable.ic_floormap_placeholder,
             null
         )
         val mapImageLoader = ImageLoader(requireContext()) {
@@ -38,10 +37,9 @@ class FloorMapFragment : Fragment(R.layout.fragment_floormap), Injectable {
             error(mapPlaceholderDrawable)
         }
 
-        navArgs.room?.getRoomTypeResource()?.let { resId ->
+        navArgs.room?.getRoomTypeResourceUrl()?.let { url ->
             // handle navigation from session detail page
-            // TODO: change map url depends on room type
-            binding.floorMapImage.load(MAP_URL, mapImageLoader) {
+            binding.floorMapImage.load(url, mapImageLoader) {
                 lifecycle(viewLifecycleOwnerLiveData.value)
             }
         } ?: apply {
@@ -72,17 +70,16 @@ class FloorMapFragment : Fragment(R.layout.fragment_floormap), Injectable {
     }
 }
 
-@DrawableRes
-fun Room.getRoomTypeResource(): Int {
-    val type = this.roomType ?: return R.drawable.ic_floor_map
+fun Room.getRoomTypeResourceUrl(): String {
+    val type = this.roomType ?: return FloorMapFragment.MAP_URL
     return when (type) { // TODO: Add pin images
-        Room.RoomType.EXHIBITION -> R.drawable.ic_floor_map
-        Room.RoomType.APP_BAR -> R.drawable.ic_floor_map
-        Room.RoomType.BACKDROP -> R.drawable.ic_floor_map
-        Room.RoomType.CARDS -> R.drawable.ic_floor_map
-        Room.RoomType.DIALOGS -> R.drawable.ic_floor_map
-        Room.RoomType.PICKERS -> R.drawable.ic_floor_map
-        Room.RoomType.SLIDERS -> R.drawable.ic_floor_map
-        Room.RoomType.TABS -> R.drawable.ic_floor_map
+        Room.RoomType.EXHIBITION -> FloorMapFragment.MAP_URL
+        Room.RoomType.APP_BAR -> FloorMapFragment.MAP_URL
+        Room.RoomType.BACKDROP -> FloorMapFragment.MAP_URL
+        Room.RoomType.CARDS -> FloorMapFragment.MAP_URL
+        Room.RoomType.DIALOGS -> FloorMapFragment.MAP_URL
+        Room.RoomType.PICKERS -> FloorMapFragment.MAP_URL
+        Room.RoomType.SLIDERS -> FloorMapFragment.MAP_URL
+        Room.RoomType.TABS -> FloorMapFragment.MAP_URL
     }
 }
